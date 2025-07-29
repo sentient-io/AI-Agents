@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sentient-asr-dev-mcp
+  name: sentient-asr-dev-mcp
+spec:
+  selector:
+    matchLabels:
+      app: sentient-asr-dev-mcp
+  template:
+    metadata:
+      labels:
+        app: sentient-asr-dev-mcp
+        description: sentient-asr-dev-mcp
+    spec:
+      containers:
+      - image: asia-southeast1-docker.pkg.dev/platform-prod-390407/sentientgar/sentient-asr-dev-mcp:0.0.1
+        imagePullPolicy: Always
+        name: sentient-asr-dev-mcp
+        env: 
+        - name: TZ
+          value: Asia/Singapore
+        ports:
+        - containerPort: 8080
+          name: port1
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 6Gi
+          requests:
+            cpu: "1"
+            memory: 6Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentient-asr-dev-mcp
+  annotations:
+    cloud.google.com/backend-config: '{"default": "sentient-asr-dev-mcp-backendconfig"}'
+spec:
+  ports:
+  - name: sentient-asr-dev-mcp
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: sentient-asr-dev-mcp
+  type: ClusterIP
+  

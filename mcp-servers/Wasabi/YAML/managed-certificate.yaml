@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: wasabi-dev-mcp-managed
+spec:
+  domains:
+    - wasabi-dev-mcp.sentient.io

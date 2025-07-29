@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: wasabi-dev-mcp
+  name: wasabi-dev-mcp
+spec:
+  selector:
+    matchLabels:
+      app: wasabi-dev-mcp
+  template:
+    metadata:
+      labels:
+        app: wasabi-dev-mcp
+        description: wasabi-dev-mcp
+    spec:
+      containers:
+      - image: asia-southeast1-docker.pkg.dev/platform-prod-390407/sentientgar/wasabi-dev-mcp:0.0.1
+        imagePullPolicy: Always
+        name: wasabi-dev-mcp
+        env: 
+        - name: TZ
+          value: Asia/Singapore
+        ports:
+        - containerPort: 8080
+          name: port1
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 6Gi
+          requests:
+            cpu: "1"
+            memory: 6Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wasabi-dev-mcp
+  annotations:
+    cloud.google.com/backend-config: '{"default": "wasabi-dev-mcp-backendconfig"}'
+spec:
+  ports:
+  - name: wasabi-dev-mcp
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: wasabi-dev-mcp
+  type: ClusterIP
+  

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: es-dev-mcp
+  name: es-dev-mcp
+spec:
+  selector:
+    matchLabels:
+      app: es-dev-mcp
+  template:
+    metadata:
+      labels:
+        app: es-dev-mcp
+        description: es-dev-mcp
+    spec:
+      containers:
+      - image: asia-southeast1-docker.pkg.dev/platform-prod-390407/sentientgar/es-dev-mcp:0.0.7
+        imagePullPolicy: Always
+        name: es-dev-mcp
+        env: 
+        - name: TZ
+          value: Asia/Singapore
+        ports:
+        - containerPort: 8080
+          name: port1
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 6Gi
+          requests:
+            cpu: "1"
+            memory: 6Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: es-dev-mcp
+  annotations:
+    cloud.google.com/backend-config: '{"default": "es-dev-mcp-backendconfig"}'
+spec:
+  ports:
+  - name: es-dev-mcp
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: es-dev-mcp
+  type: ClusterIP
+  

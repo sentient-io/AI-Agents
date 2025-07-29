@@ -1,0 +1,4 @@
+import os
+WASABI_ENDPOINT_URL = os.environ.get('WASABI_ENDPOINT_URL')
+WASABI_ACCESS_KEY = os.environ.get('WASABI_ACCESS_KEY')
+WASABI_SECRET_KEY = os.environ.get('WASABI_SECRET_KEY')

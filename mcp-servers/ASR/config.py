@@ -1,0 +1,8 @@
+import os
+
+SENTIENT_X_API_KEY = os.environ.get('SENTIENT-X-API-KEY')
+ASR_UPLOAD_ENDPOINT = os.environ.get('ASR_UPLOAD_ENDPOINT')
+ASR_STATUS_ENDPOINT = os.environ.get('ASR_STATUS_ENDPOINT')
+RAPID_API_ENDPOINT = os.environ.get('RAPID_API_ENDPOINT')
+RAPID_API_KEY = os.environ.get('RAPID_API_KEY')
+RAPID_HOST = os.environ.get('RAPID_HOST')

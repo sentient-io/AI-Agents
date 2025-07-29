@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: sentient-asr-dev-mcp-managed
+spec:
+  domains:
+    - sentient-asr-dev-mcp.sentient.io

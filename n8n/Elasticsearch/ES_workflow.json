@@ -1,0 +1,166 @@
+{
+  "name": "ES workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "es",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1480,
+        -580
+      ],
+      "id": "540e5656-18a7-4cdc-952b-acc0fdcff991",
+      "name": "ES - Webhook",
+      "webhookId": "9166905c-5d74-493b-b176-32e11f247490"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1260,
+        -580
+      ],
+      "id": "da200c5b-c5ae-4daa-bd4c-fb591d0fda95",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        -340
+      ],
+      "id": "cacc6a15-3fd7-4fb7-8b9b-968ee7214ee6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ccn6QQ4WVrWKookN",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://es-dev-mcp.sentient.io/mcp/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        -320
+      ],
+      "id": "6fc3236a-ee29-469d-8c96-8edfa744af83",
+      "name": "ES MCP Client"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [$input.first().json]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -820,
+        -580
+      ],
+      "id": "c6c51e5c-520b-4c1a-90e1-ec4223ba7cd1",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('ES - Webhook').item.json.body.chat_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1180,
+        -360
+      ],
+      "id": "7a9aaa1a-2155-4e22-98f5-6c0f28b4db4e",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ES - Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ES MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c49e25ac-c172-4e58-8b5c-53768247a765",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ecd6d69669e5a1ef1e4ab4d2c0ffa7a567b2254646d518295df1e50fc11c25ea"
+  },
+  "id": "9dXdwaCSorCTlIs6",
+  "tags": []
+}

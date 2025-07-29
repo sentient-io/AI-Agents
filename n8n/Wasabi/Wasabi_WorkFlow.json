@@ -1,0 +1,173 @@
+{
+  "name": "Wasabi WorkFlow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        -480
+      ],
+      "id": "54a80ee8-071c-4c4a-8bff-feb87222aa65",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://wasabi-dev-mcp.sentient.io/mcp/sse",
+        "include": "selected",
+        "includeTools": [
+          "list_all_files",
+          "presigned_url",
+          "delete_file",
+          "file_content"
+        ]
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -1140,
+        -260
+      ],
+      "id": "869464f1-1004-4251-8e20-a62c409f2e8b",
+      "name": "Wasabi MCP Client"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1660,
+        -260
+      ],
+      "id": "4a06f1fc-7467-4d73-aef2-28bc9694c33b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ccn6QQ4WVrWKookN",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw string\ntry {\n  let raw = $input.first().json.output;\n  \n  // Remove starting ``````\n  let cleaned = raw.trim()\n      .replace(/^```json\\s*\\n/, '')\n      .replace(/```$/, '')\n  \n  // Now parse the cleaned JSON string\n  let output = JSON.parse(cleaned);\n  \n  return output;\n}\ncatch(err) {\n  console.log(err)\n  return [{\"output\" : $input.first().json.output}]\n  \n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        -480
+      ],
+      "id": "655362f9-ce75-4608-a239-55183cf6a156",
+      "name": "Generate Final Output"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wasabi",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1920,
+        -480
+      ],
+      "id": "caff1d81-4869-41b4-9505-f5aec27e0b51",
+      "name": "Wasabi - Webhook",
+      "webhookId": "37ab70b8-04a4-4af8-80f9-64f23837a44a"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.chat_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1400,
+        -260
+      ],
+      "id": "4e29f484-de7a-49b0-acf6-74816866a5aa",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wasabi MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Generate Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wasabi - Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "48cb3c34-49a6-4708-b144-d59583616ea9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ecd6d69669e5a1ef1e4ab4d2c0ffa7a567b2254646d518295df1e50fc11c25ea"
+  },
+  "id": "8mJJPLquwuiJIwcD",
+  "tags": []
+}

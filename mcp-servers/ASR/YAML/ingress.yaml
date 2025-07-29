@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentient-asr-dev-mcp-ingress
+  annotations:
+    networking.gke.io/managed-certificates: "sentient-asr-dev-mcp-managed"
+    kubernetes.io/ingress.global-static-ip-name: sentient-asr-dev-mcp-ip
+spec:
+  rules:
+  - host: sentient-asr-dev-mcp.sentient.io
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: sentient-asr-dev-mcp
+            port: 
+              number: 80

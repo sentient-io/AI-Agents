@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: es-dev-mcp-ingress
+  annotations:
+    networking.gke.io/managed-certificates: "es-dev-mcp-managed"
+    kubernetes.io/ingress.global-static-ip-name: es-dev-mcp-ip
+spec:
+  rules:
+  - host: es-dev-mcp.sentient.io
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: es-dev-mcp
+            port: 
+              number: 80
