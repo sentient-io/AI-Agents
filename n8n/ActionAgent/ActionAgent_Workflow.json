@@ -1,0 +1,192 @@
+{
+  "name": "ACTION AGENT",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -720,
+        -20
+      ],
+      "id": "27be1162-78be-4583-a28e-17f7f7bfb35d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "fsa1qkrsHlz1C9f3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋",
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        -300
+      ],
+      "id": "9b97d557-76fa-46c1-843a-11f8ce60b031",
+      "name": "When chat message received",
+      "webhookId": "3900eaca-921b-4616-9f2a-b127c4c301b1"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://wasabi-dev-mcp.sentient.io/mcp/sse",
+        "include": "selected"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "fe05c284-e6d8-4dc6-9202-57ae005dd8e0",
+      "name": "Wasabi MCP"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://sentient-asr-dev-mcp.sentient.io/mcp/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        0
+      ],
+      "id": "34f81f07-3e5e-466e-a86f-f766f53b829a",
+      "name": "ASR MCP"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://es-dev-mcp.sentient.io/mcp/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        0
+      ],
+      "id": "3504d85f-a7a1-4e20-94a9-805d1c0eac6a",
+      "name": "ES MCP"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -540,
+        -20
+      ],
+      "id": "bc41dda1-8a2c-42fc-82e2-e987dd9eead4",
+      "name": "Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        -300
+      ],
+      "id": "a157ab14-9a0d-4b71-b088-a8dd7ee17b75",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wasabi MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ASR MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ES MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3c44dbae-05e7-4ddc-8424-8c9d9012a4bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ecd6d69669e5a1ef1e4ab4d2c0ffa7a567b2254646d518295df1e50fc11c25ea"
+  },
+  "id": "p1TGwIiK5CiPD6Jl",
+  "tags": []
+}
