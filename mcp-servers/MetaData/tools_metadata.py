@@ -46,24 +46,39 @@ def get_youtube_comments(video_url: str, rapidapi_key: str):
     video_id = get_youtube_id(video_url)
     cursor = ""
     all_comments = []
+    headers = {
+        'x-rapidapi-host': 'youtube138.p.rapidapi.com',
+        'x-rapidapi-key': rapidapi_key
+    }
+
+    data = {}
+    video_details_url = f"https://youtube138.p.rapidapi.com/video/details/?id={video_id}"
+    video_response = requests.request("GET", video_details_url, headers=headers)
+    if video_response.status_code == 200:
+        video_data = video_response.json()
+        data['video_id'] = video_id
+        data['created_by'] = video_data.get('author', {}).get('title', '')
+        data['created_date'] = video_data.get('publishedDate', '')
+        data['title'] = video_data.get('title', '')
+        data['description'] = video_data.get('description', '')
+        data['keywords'] = video_data.get('keywords', [])
+
     while True:
         url = f"https://youtube138.p.rapidapi.com/video/comments/?id={video_id}"
         if cursor:
             url += f"&cursor={cursor}"
-        headers = {
-            'x-rapidapi-host': 'youtube138.p.rapidapi.com',
-            'x-rapidapi-key': rapidapi_key
-        }
+        
         response = requests.request("GET", url, headers=headers)
         if response.status_code == 200:
-            data = response.json()
-            comments = data.get('comments', [])
+            comment_data = response.json()
+            comments = comment_data.get('comments', [])
             all_comments.extend(comments)
-            cursor = data.get('cursor', '')
+            cursor = comment_data.get('cursorNext', '')
             if not cursor:
                 break
-        else:
-            break
+            
+        # else:
+        #     break
     
     try:
         comments = []
@@ -72,11 +87,7 @@ def get_youtube_comments(video_url: str, rapidapi_key: str):
             comment = cmt.get('content', '')
             author = cmt.get('author', {}).get('title', '')
             comments.append({'comment': comment, 'name': author})
-        data = {
-            'created_by': "",
-            'created_date': "",
-            'comments': comments
-        }
+        data['comments'] = comments
         return (data, only_comments)
     except Exception as e:
         return None
@@ -155,7 +166,7 @@ def get_social_media_comments(url: str, doc_id: str):
         data, only_comments = coment_response
         client = GeminiClient(
             api_key=GOOGLE_GEMINI_API_KEY,
-            model_name="gemini-1.5-pro",
+            model_name="gemini-2.0-flash",
             data=only_comments
         )
         gemini_response = client.get_response()
