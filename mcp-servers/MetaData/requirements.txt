@@ -1,3 +1,7 @@
 fastapi>=0.110.0
 uvicorn>=0.28.0
-google-generativeai
+sse-starlette>=2.0.0
+mcp>=0.1.0
+fastmcp==2.9.0
+requests==2.32.4
+google-generativeai==0.8.5

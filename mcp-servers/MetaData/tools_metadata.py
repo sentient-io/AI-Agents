@@ -34,6 +34,15 @@ class GeminiClient:
         return response.text.strip()
 
 
+def get_clean_json(text):
+    match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            return []
+    return []
+
 def get_youtube_id(url: str) -> str | None:
     regex = (
         r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
@@ -42,7 +51,7 @@ def get_youtube_id(url: str) -> str | None:
     return match.group(1) if match else None
 
 
-def get_youtube_comments(video_url: str, rapidapi_key: str):
+def get_youtube_metadata(video_url: str, rapidapi_key: str):
     video_id = get_youtube_id(video_url)
     cursor = ""
     all_comments = []
@@ -87,13 +96,16 @@ def get_youtube_comments(video_url: str, rapidapi_key: str):
             comment = cmt.get('content', '')
             author = cmt.get('author', {}).get('title', '')
             comments.append({'comment': comment, 'name': author})
+        
+        if data['description']:
+            comments.append({'comment': data['description'], 'name': "From Description"})
         data['comments'] = comments
         return (data, only_comments)
     except Exception as e:
         return None
 
 
-def get_facebook_comments(video_url: str, rapidapi_key: str):
+def get_facebook_metadata(video_url: str, rapidapi_key: str):
     url = f"https://facebook-scraper-api4.p.rapidapi.com/get_facebook_post_comments_details?link={video_url}"
     print(url, rapidapi_key)
     payload = {}
@@ -123,7 +135,7 @@ def get_facebook_comments(video_url: str, rapidapi_key: str):
         return None
 
 
-def get_tiktok_comments(video_url: str, rapidapi_key: str):
+def get_tiktok_metadata(video_url: str, rapidapi_key: str):
     url = f"https://tiktok-scraper7.p.rapidapi.com/comment/list?url={video_url}"
     payload = {}
     headers = {
@@ -148,19 +160,41 @@ def get_tiktok_comments(video_url: str, rapidapi_key: str):
     else:
         return None
 
-#MCP Call
-@metadata_mcp.tool( name = "get_comments" )
-def get_social_media_comments(url: str, doc_id: str):
+@metadata_mcp.tool( name = "get_metadata_info" )
+def get_metadata_info(url: str):
+    """
+    Retrieves metadata and processes comments from a given social media URL (YouTube, Facebook, or TikTok).
+
+    This tool fetches video or post metadata, including comments, from the specified URL.
+    It then analyzes the comments to identify potential 'speakers' (which could be key entities
+    or people mentioned). Finally, it cleans and formats the top 10 comments and includes the identified speakers in the output data.
+
+    Args:
+        url (str): The URL of the social media post or video (must contain 'youtube.com',
+                   'youtu.be', 'facebook.com', or 'tiktok.com').
+
+    Returns:
+        dict: A dictionary containing the processing status, a message, and the 'data' payload.
+              The 'data' includes the original metadata, a 'comments' list (top 10 cleaned comments),
+              and a 'speakers' list (identified by the AI model).
+              
+              Example Success Return:
+              {"status": "Success", "data": {... metadata ..., "comments": [...], "speakers": [...]}, "message": "Successfully processed."}
+              
+              Example Failure Return:
+              {"status": "Success", "message": "Not able to fetch metadata."}
+    """    
     rapidapi_key = X_RAPIDAPI_KEY
+    coment_response = None
     if "youtube.com" in url or "youtu.be" in url:
-        coment_response = get_youtube_comments(url, rapidapi_key)
+        coment_response = get_youtube_metadata(url, rapidapi_key)
     elif "facebook.com" in url:
         print("Fetching Facebook comments...")
-        coment_response = get_facebook_comments(url, rapidapi_key)
+        coment_response = get_facebook_metadata(url, rapidapi_key)
     elif "tiktok.com" in url:
-        coment_response = get_tiktok_comments(url, rapidapi_key)
-    else:
-        return None
+        coment_response = get_tiktok_metadata(url, rapidapi_key)
+    # else:
+    #     return None
     
     if coment_response:
         data, only_comments = coment_response
@@ -170,10 +204,12 @@ def get_social_media_comments(url: str, doc_id: str):
             data=only_comments
         )
         gemini_response = client.get_response()
-        try:
-            speakers = json.loads(gemini_response)
-        except json.JSONDecodeError:
-            speakers = []
+        speakers = get_clean_json(gemini_response)
+
+        # try:
+        #     speakers = json.loads(gemini_response)
+        # except json.JSONDecodeError:
+        #     speakers = []
 
         comments = data.get('comments', [])
         cleaned_comments = []
@@ -184,8 +220,8 @@ def get_social_media_comments(url: str, doc_id: str):
             data['comments'] = cleaned_comments
         data['speakers'] = speakers
 
-        return {"status": "Success", "data": data, "message": "Successfully Got the Comments."}
+        return {"status": "Success", "data": data, "message": "Successfully processed."}
     else:
-        return None
+        return {"status": "Success", "message": "Not able to fetch metadata."}
     
 print("Metadata Tools Activated")

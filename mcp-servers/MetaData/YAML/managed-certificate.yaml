@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: metadata-dev-mcp-managed
+spec:
+  domains:
+    - metadata-dev-mcp.sentient.io

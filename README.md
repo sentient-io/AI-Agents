@@ -44,3 +44,19 @@ AI Agents (n8n Flows &amp; MCP Servers)
     Run the server
     
     > python mcp-servers/Wasabi/server.py
+
+## libraries
+1. video-metadata:
+
+    ### 1. Development Installation
+    ```bash
+    - git clone https://github.com/sentient-io/AI-Agents.git
+    ```
+    ```bash
+    - cd libraries/video-metadata
+    ```
+    ```bash
+    - pip install -e .
+    ```    
+
+
