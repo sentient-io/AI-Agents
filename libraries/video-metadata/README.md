@@ -47,23 +47,26 @@ manager = VideoMetaDataManager(
 
 # Insert video data
 video_id = manager.insert_video_data(
-    "video_001",
+    "DqZrV53Vbhk",
+    "https://www.youtube.com/watch?v=DqZrV53Vbhk"
     {
-        "title": "My Video",
-        "duration": 120,
-        "resolution": "1080p",
-        "tags": ["tutorial", "python"]
+        "video_id" : "DqZrV53Vbhk",
+        "title": "IRO Lecture on",
+        "description" : "In this lecture, Dr Phyllis Chew, Professor at Singapore National Institute of Education"
+        "duration": "60"
     }
 )
 print(f"Inserted video with ID: {video_id}")
 
 # Update metadata
 updated_count = manager.update_video_metadata(
-    "video_001",
+    "DqZrV53Vbhk",
     {
-        "title": "Updated Video Title",
-        "category": "educational",
-        "views": 1500
+        "video_id" : "DqZrV53Vbhk",
+        "title": "IRO Lecture on",
+        "description" : "In this lecture, Dr Phyllis Chew, Professor at Singapore National Institute of Education"
+        "duration": "60",
+        "people" : {{"speakers": [{"name": "Dr Phyllis Chew"}]}}
     }
 )
 print(f"Updated {updated_count} record(s)")

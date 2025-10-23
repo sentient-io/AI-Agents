@@ -79,6 +79,7 @@ class VideoMetaDataManager:
                     cursor.execute('''
                         CREATE TABLE IF NOT EXISTS video_metadata (
                             video_id VARCHAR(255) PRIMARY KEY,
+                            video_url TEXT,
                             metadata TEXT,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -89,12 +90,13 @@ class VideoMetaDataManager:
         except pymysql.Error as err:
             print(f"Error creating table: {err}")
     
-    def insert_video_data(self, video_id: str, metadata: Dict) -> Optional[int]:
+    def insert_video_data(self, video_id: str, video_url: str, metadata: Dict) -> Optional[int]:
         """
         Insert a new video record into the database.
         
         Args:
             video_id (str): Unique identifier for the video
+            video_url (str): video URL
             metadata (dict): Dictionary containing video metadata
             
         Returns:
@@ -105,11 +107,11 @@ class VideoMetaDataManager:
             with self._get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        'INSERT INTO video_metadata (video_id, metadata) VALUES (%s, %s)',
-                        (video_id, metadata_json)
+                        'INSERT INTO video_metadata (video_id, video_url, metadata) VALUES (%s, %s, %s)',
+                        (video_id, video_url, metadata_json)
                     )
                     conn.commit()
-                    return cursor.lastrowid
+                    return video_id # cursor.lastrowid
         except pymysql.Error as e:
             print(f"Error inserting video data: {e}")
             return None
@@ -139,12 +141,12 @@ class VideoMetaDataManager:
             print(f"Error updating video metadata: {e}")
             return 0
     
-    def get_video_metadata(self, video_id: str) -> Optional[Dict]:
+    def get_video_metadata(self, video_url: str) -> Optional[Dict]:
         """
         Retrieve metadata for a specific video ID.
         
         Args:
-            video_id (str): The unique identifier of the video
+            video_url (str): The unique video URL
             
         Returns:
             dict | None: Dictionary containing the video metadata if found, None otherwise
@@ -153,8 +155,8 @@ class VideoMetaDataManager:
             with self._get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        'SELECT * FROM video_metadata WHERE video_id = %s',
-                        (video_id,)
+                        'SELECT * FROM video_metadata WHERE video_url = %s',
+                        (video_url,)
                     )
                     row = cursor.fetchone()
                     
@@ -187,6 +189,7 @@ class VideoMetaDataManager:
                         try:
                             video_data = {
                                 'video_id': row['video_id'],
+                                'video_url': row['video_url'],
                                 'metadata': json.loads(row['metadata']) if row['metadata'] else {}
                             }
                             result.append(video_data)
