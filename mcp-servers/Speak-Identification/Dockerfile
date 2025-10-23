@@ -15,7 +15,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
+
 COPY . .
+
+RUN pip install -e ./video-metadata
 
 # Expose the port the app runs on
 EXPOSE 8080

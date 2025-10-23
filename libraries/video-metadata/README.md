@@ -95,7 +95,7 @@ Insert a new video record with the given metadata.
 Update metadata for an existing video.
 - Returns: Number of rows updated (0 if not found, 1 if updated)
 
-#### `get_video_metadata(video_id: str) -> Optional[Dict]`
+#### `get_video_metadata(video_url: str) -> Optional[Dict]`
 Retrieve metadata for a specific video.
 - Returns: Dictionary containing video data or None if not found
 

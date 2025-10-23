@@ -4,9 +4,19 @@ import requests
 import json
 import re
 import config
+from datetime import datetime
+import pytz
+from video_metadata_manager import VideoMetaDataManager
 
 metadata_mcp = FastMCP("Metadata Tools")
 
+manager = VideoMetaDataManager(
+    host=config.DB_HOST,
+    user=config.DB_USER,
+    password=config.DB_PASSWORD,
+    db_name=config.DB_NAME,
+    port=13306
+)
 
 X_RAPIDAPI_KEY = config.X_RAPIDAPI_KEY
 GOOGLE_GEMINI_API_KEY = config.GOOGLE_GEMINI_API_KEY
@@ -24,10 +34,10 @@ class GeminiClient:
         prompt = f"""Based on the data provided, your task is to find the most relevant response to the query using the content available in the provided data. Your response should be concise yet comprehensive, ensuring that all necessary details are captured.
 
         Data: {self.data}
-        Query: From the data provided, find the names of the peoples mentioned from the data. The response should be structured as a JSON array containing the names of the peoples. Also mention the title of the person if it is mentioned in the given data. Do not include any other information apart from the names of the peoples and their titles from the given data.
+        Query: From the data provided, find the names of the peoples mentioned from the data. The response should be structured as a JSON array containing the unique names of the peoples. Give only the unique names from the data, do not include the similar names in the output. Also mention the title of the person if it is mentioned in the given data. Do not include any other information apart from the names of the peoples and their titles from the given data.
 
         Instructions:
-        1. **Content Relevance**: Understand the query and collect the list of names of the peoples given in the data. Also mention the title of the person if it is mentioned in the given data. Do not include any other information apart from the names of the peoples and their titles from the given data.
+        1. **Content Relevance**: Understand the query and collect the list of unique names of the peoples given in the data. Give only the unique names from the data, do not include the similar names in the output. Also mention the title of the person if it is mentioned in the given data. Do not include any other information apart from the names of the peoples and their titles from the given data.
         2. **Output Format**: The output must be in json array and the response must be a array of strings . Do not add like this text in output "```json\n" and "\n```". Do not add any invalid control character in JSON. Ensure the response is always structured as JSON and nothing else is included in the output. The output only contains the JSON array and nothing else. Do not add any explanation or additional text outside of the JSON array. The output should be a valid JSON array and nothing else. Do not add any invalid control character in JSON. Ensure the response is always structured as JSON and nothing else is included in the output. The output only contains the JSON array and nothing else. Do not add any explanation or additional text outside of the JSON array.
         """
         response = self.model.generate_content(prompt)
@@ -63,6 +73,7 @@ def get_youtube_metadata(video_url: str, rapidapi_key: str):
     data = {}
     video_details_url = f"https://youtube138.p.rapidapi.com/video/details/?id={video_id}"
     video_response = requests.request("GET", video_details_url, headers=headers)
+    print(video_response)
     if video_response.status_code == 200:
         video_data = video_response.json()
         data['video_id'] = video_id
@@ -71,92 +82,56 @@ def get_youtube_metadata(video_url: str, rapidapi_key: str):
         data['title'] = video_data.get('title', '')
         data['description'] = video_data.get('description', '')
         data['keywords'] = video_data.get('keywords', [])
+        data['likes'] = video_data.get('stats', {}).get('likes', '')
+        data['view_count'] = video_data.get('stats', {}).get('views', '')        
 
-    while True:
-        url = f"https://youtube138.p.rapidapi.com/video/comments/?id={video_id}"
-        if cursor:
-            url += f"&cursor={cursor}"
-        
-        response = requests.request("GET", url, headers=headers)
-        if response.status_code == 200:
-            comment_data = response.json()
-            comments = comment_data.get('comments', [])
-            all_comments.extend(comments)
-            cursor = comment_data.get('cursorNext', '')
-            if not cursor:
-                break
-            
-        # else:
-        #     break
-    
     try:
-        comments = []
-        only_comments = [cmt.get('content', '') for cmt in all_comments]
-        for cmt in all_comments:
-            comment = cmt.get('content', '')
-            author = cmt.get('author', {}).get('title', '')
-            comments.append({'comment': comment, 'name': author})
-        
-        if data['description']:
-            comments.append({'comment': data['description'], 'name': "From Description"})
-        data['comments'] = comments
+        only_comments = data.get('description', '')
         return (data, only_comments)
     except Exception as e:
         return None
 
 
 def get_facebook_metadata(video_url: str, rapidapi_key: str):
-    url = f"https://facebook-scraper-api4.p.rapidapi.com/get_facebook_post_comments_details?link={video_url}"
-    print(url, rapidapi_key)
+    detail_url = f"https://facebook-scraper-api4.p.rapidapi.com/get_facebook_post_details?link={video_url}"
     payload = {}
     headers = {
         'x-rapidapi-key': rapidapi_key,
         'x-rapidapi-host': 'facebook-scraper-api4.p.rapidapi.com'
     }
-    response = requests.request("GET", url, headers=headers, data=payload)
-    if response.status_code == 200:
-        print(response.text)
-        try:
-            data = response.json()
-            only_comments = [i['comment_text'] for i in data['data']['comments']]
-            comments = [{'comment': i['comment_text'], 'name': i['author']['name']} for i in data['data']['comments']]
-            fb_response = {
-                'created_by': "",
-                'created_date': "",
-                'comments': comments
-            }
-            return (fb_response, only_comments)
-        except Exception as e:
-            print(f"Error parsing Facebook comments: {e}")
-            return None
+    metadata = {}
+    detail_response = requests.request("GET", detail_url, headers=headers, data=payload)
+    if detail_response.status_code == 200:
+        detail_data = detail_response.json()
+        if len(detail_data) > 0:
+            detail_data = detail_data[0]
+            metadata['video_id'] = detail_data.get('details', {}).get('post_id', '')
+            metadata['title'] = detail_data.get('values', {}).get('text', '')
+            metadata['created_by'] = detail_data.get('user_details', {}).get('name', '')
+    if metadata:
+        return (metadata, metadata.get('title', ''))
     else:
-        print(f"Facebook API request failed with status code {response.status_code}")
-        print(response.text)
         return None
 
-
 def get_tiktok_metadata(video_url: str, rapidapi_key: str):
-    url = f"https://tiktok-scraper7.p.rapidapi.com/comment/list?url={video_url}"
+    detail_url = f"https://tiktok-scraper7.p.rapidapi.com/?url={video_url}"
     payload = {}
     headers = {
         'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com',
         'x-rapidapi-key': rapidapi_key,
     }
-    response = requests.request("GET", url, headers=headers, data=payload)
-    if response.status_code == 200:
-        try:
-            data = response.json()
-            only_comments = [i['text'] for i in data['data']['comments']]
-            comments = [{'comment': i['text'], 'name': i['user']['unique_id']} for i in data['data']['comments']]
-            tt_response = {
-                'created_by': "",
-                'created_date': "",
-                'comments': comments
-            }
-            return (tt_response, only_comments)
-        except Exception as e:
-            print(f"Error parsing TikTok comments: {e}")
-            return None
+    metadata = {}
+    detail_response = requests.request("GET", detail_url, headers=headers, data=payload)
+
+    if detail_response.status_code == 200:
+        detail_data = detail_response.json()['data']
+        metadata["video_id"] = detail_data.get('id', '')
+        metadata['title'] = detail_data.get('title', '')
+        metadata['created_by'] = detail_data.get('author', {}).get('unique_id', '')
+        metadata['created_date'] = detail_data.get('create_time', '')
+
+    if metadata:
+        return (metadata, metadata.get('title', ''))
     else:
         return None
 
@@ -184,44 +159,87 @@ def get_metadata_info(url: str):
               Example Failure Return:
               {"status": "Success", "message": "Not able to fetch metadata."}
     """    
-    rapidapi_key = X_RAPIDAPI_KEY
-    coment_response = None
-    if "youtube.com" in url or "youtu.be" in url:
-        coment_response = get_youtube_metadata(url, rapidapi_key)
-    elif "facebook.com" in url:
-        print("Fetching Facebook comments...")
-        coment_response = get_facebook_metadata(url, rapidapi_key)
-    elif "tiktok.com" in url:
-        coment_response = get_tiktok_metadata(url, rapidapi_key)
-    # else:
-    #     return None
-    
-    if coment_response:
-        data, only_comments = coment_response
-        client = GeminiClient(
-            api_key=GOOGLE_GEMINI_API_KEY,
-            model_name="gemini-2.0-flash",
-            data=only_comments
-        )
-        gemini_response = client.get_response()
-        speakers = get_clean_json(gemini_response)
+    existing_data = manager.get_video_metadata(url)
+    print(existing_data)
+    if existing_data is None:
+        rapidapi_key = X_RAPIDAPI_KEY
+        coment_response = None
+        if "youtube.com" in url or "youtu.be" in url:
+            print("IN youtube")
+            coment_response = get_youtube_metadata(url, rapidapi_key)
+            print(coment_response)
+            print("out youtube")
+        elif "facebook.com" in url:
+            print("Fetching Facebook comments...")
+            coment_response = get_facebook_metadata(url, rapidapi_key)
+        elif "tiktok.com" in url:
+            coment_response = get_tiktok_metadata(url, rapidapi_key)
+        
+        metadata_template = {
+                "video_id": "",
+                "title": "",
+                "description": "",
+                "duration": "",
+                "file_info": 
+                {
+                    "filename": "",
+                    "format": "",
+                    "codec": ""
+                },
+                "content":
+                {
+                    "keywords": []
+                },
+                "people":
+                {
+                    "speakers":[]
+                },
+                "usage":
+                {
+                    "view_count": "",
+                    "likes": "",
+                    "owner": "",
+                    "analysis_timestamp": ""
+                }
+            }        
+        if coment_response:
+            data, only_comments = coment_response
+            metadata_template['video_id'] = data.get('video_id', '')
+            metadata_template['title'] = data.get('title', '')
+            metadata_template['description'] = data.get('description', '')
+            metadata_template['duration'] = ""
+            metadata_template['file_info']['filename'] = data.get('title', '')
+            metadata_template['file_info']['format'] = 'mp4'
+            metadata_template['file_info']['codec'] = 'H.264'
+            metadata_template['content']['keywords'] = data.get('keywords', [])
+            metadata_template['usage']['view_count'] = data.get('view_count', '')
+            metadata_template['usage']['likes'] = data.get('likes', '')
+            metadata_template['usage']['owner'] = data.get('created_by', '')
+            sg_timezone = pytz.timezone('Asia/Singapore')
+            sg_time = datetime.now(sg_timezone)
+            formatted_time = sg_time.strftime("%d/%m/%Y %I:%M %p").lower()
+            metadata_template['usage']['analysis_timestamp'] = formatted_time +" SGT" # data.get('created_date', '')
 
-        # try:
-        #     speakers = json.loads(gemini_response)
-        # except json.JSONDecodeError:
-        #     speakers = []
+            client = GeminiClient(
+                api_key=GOOGLE_GEMINI_API_KEY,
+                model_name="gemini-2.0-flash",
+                data=only_comments
+            )
+            gemini_response = client.get_response()
+            speakers = get_clean_json(gemini_response)
 
-        comments = data.get('comments', [])
-        cleaned_comments = []
-        if comments:
-            for i in comments[:10]:
-                cleaned_text = re.sub(r'[\U00010000-\U0010FFFF]', '', i['comment'])
-                cleaned_comments.append({'comment': cleaned_text, 'name': i['name']})
-            data['comments'] = cleaned_comments
-        data['speakers'] = speakers
+            for speaker in speakers:
+                metadata_template['people']['speakers'].append({'name': speaker})
 
-        return {"status": "Success", "data": data, "message": "Successfully processed."}
+            try:
+                video_id = metadata_template['video_id']
+                manager.insert_video_data(video_id, url, metadata_template)
+            except Exception as e:
+                print(e)
+            return {"status": "Success", "data": metadata_template, "message": "Successfully processed."}
+        else:
+            return {"status": "Success", "message": "Not able to fetch metadata."}
     else:
-        return {"status": "Success", "message": "Not able to fetch metadata."}
+        return {"status": "Success", "data": existing_data, "message": "Successfully processed."}
     
 print("Metadata Tools Activated")
