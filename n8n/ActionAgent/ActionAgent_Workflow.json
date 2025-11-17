@@ -14,8 +14,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -720,
-        -20
+        -1020,
+        -160
       ],
       "id": "27be1162-78be-4583-a28e-17f7f7bfb35d",
       "name": "OpenAI Chat Model",
@@ -37,8 +37,8 @@
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.1,
       "position": [
-        -640,
-        -300
+        -1220,
+        -460
       ],
       "id": "9b97d557-76fa-46c1-843a-11f8ce60b031",
       "name": "When chat message received",
@@ -52,8 +52,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1,
       "position": [
-        -320,
-        0
+        -700,
+        -160
       ],
       "id": "fe05c284-e6d8-4dc6-9202-57ae005dd8e0",
       "name": "Wasabi MCP"
@@ -65,8 +65,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1,
       "position": [
-        -180,
-        0
+        -580,
+        -160
       ],
       "id": "34f81f07-3e5e-466e-a86f-f766f53b829a",
       "name": "ASR MCP"
@@ -78,8 +78,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1,
       "position": [
-        -20,
-        0
+        -460,
+        -160
       ],
       "id": "3504d85f-a7a1-4e20-94a9-805d1c0eac6a",
       "name": "ES MCP"
@@ -89,8 +89,8 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        -540,
-        -20
+        -860,
+        -160
       ],
       "id": "bc41dda1-8a2c-42fc-82e2-e987dd9eead4",
       "name": "Memory"
@@ -102,11 +102,115 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2,
       "position": [
-        -380,
-        -300
+        -660,
+        -640
       ],
       "id": "a157ab14-9a0d-4b71-b088-a8dd7ee17b75",
-      "name": "AI Agent"
+      "name": "AI Agent",
+      "notes": "Return output always markdown format."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-message",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1220,
+        -640
+      ],
+      "id": "4a3f87e2-93ca-48f7-ad21-7eb54dadeceb",
+      "name": "Webhook",
+      "webhookId": "61aa0dc3-8423-470e-9cce-99fa7c40b36e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cb9ad9e3-3f9c-4a8f-94e6-00531e60e335",
+              "leftValue": "={{ $('DATA').item.json.action }}",
+              "rightValue": "web",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        -640
+      ],
+      "id": "b4a92668-2bb5-4258-ba3f-2c58a0bfb948",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "var return_data = $input.all();\n\nif ($input.first() !== undefined && $input.first().json !== undefined && $input.first().json.body !== undefined)\n{\n  var body_data = $input.first().json.body\n  return_data = [\n  {\n    \"sessionId\": body_data.chat_id,\n    \"action\": \"web\",\n    \"chatInput\": body_data.query\n  }\n  ]\n}\nreturn return_data"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -940,
+        -640
+      ],
+      "id": "fe25d58c-4740-40c2-a84a-89f354500f36",
+      "name": "DATA"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "https://metadata-dev-mcp.sentient.io/mcp/sse"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        -340,
+        -160
+      ],
+      "id": "15a276a6-7ad4-4fcb-bcd3-c84d82955cb7",
+      "name": "Speaker Identification MCP"
+    },
+    {
+      "parameters": {
+        "jsCode": "var return_data = {\n    \"es_data\": [],\n    \"response_text\": $input.first().json.output,\n    \"related\": \"no\",\n    \"code\": 200,\n    \"message\": \"successfully processed\",\n    \"chat_id\" : $('DATA').first().json.sessionId\n}\n\nreturn return_data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -720
+      ],
+      "id": "be2dc67d-2aaa-450f-b3b2-0e6435d6e878",
+      "name": "Webhook-Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [$input.first().json]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -520
+      ],
+      "id": "d204d37c-df99-4f7f-a401-842a38fd9b34",
+      "name": "Chat-Response"
     }
   ],
   "pinData": {},
@@ -126,7 +230,7 @@
       "main": [
         [
           {
-            "node": "AI Agent",
+            "node": "DATA",
             "type": "main",
             "index": 0
           }
@@ -176,16 +280,78 @@
           }
         ]
       ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "DATA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Webhook-Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat-Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATA": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Speaker Identification MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3c44dbae-05e7-4ddc-8424-8c9d9012a4bb",
+  "versionId": "604b675a-70aa-44d7-8457-c7aa663d5045",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "ecd6d69669e5a1ef1e4ab4d2c0ffa7a567b2254646d518295df1e50fc11c25ea"
+    "instanceId": "cfc919cfaebbfcde62322231e1d2829aa68bd958a2ebb2888198ac0751f5df4e"
   },
   "id": "p1TGwIiK5CiPD6Jl",
   "tags": []
